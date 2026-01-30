@@ -51,4 +51,9 @@ public class VideoService {
 
         return videoRepository.save(video);
     }
+
+    public List<Video> getAllVideos() {
+        log.info("Getting all videos from database...");
+        return videoRepository.findAll();
+    }
 }
