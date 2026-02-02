@@ -1,6 +1,7 @@
 package com.yuisync.controller;
 
-import com.yuisync.model.ProcessVideoRequestDTO;
+import com.yuisync.model.DTOs.ProcessVideoRequestDTO;
+import com.yuisync.model.DTOs.ProcessVideoResponseDTO;
 import com.yuisync.model.Video;
 import com.yuisync.service.VideoService;
 import org.springframework.http.HttpStatus;
@@ -19,15 +20,17 @@ public class VideoController {
     }
 
     @PostMapping("/process")
-    public ResponseEntity<Video> processVideo(@RequestBody ProcessVideoRequestDTO request) {
-        Video video = videoService.processVideo(request.getUrl());
-        return new ResponseEntity<>(video, HttpStatus.OK);
+    public ResponseEntity<ProcessVideoResponseDTO> processVideo(
+            @RequestBody ProcessVideoRequestDTO request
+    ) {
+        ProcessVideoResponseDTO responseDTO = videoService.processVideo(request.getUrl());
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 
     @GetMapping
     public ResponseEntity<List<Video>> getAllVideos() {
-        List<Video> videos = videoService.getAllVideos();
-        return new ResponseEntity<>(videos, HttpStatus.OK);
+        List<Video> video = videoService.getAllVideos();
+        return new ResponseEntity<>(video, HttpStatus.OK);
     }
 
 }

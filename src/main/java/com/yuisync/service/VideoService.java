@@ -1,10 +1,13 @@
 package com.yuisync.service;
 
+import com.yuisync.model.DTOs.ProcessVideoResponseDTO;
 import com.yuisync.model.Video;
 import com.yuisync.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -22,7 +25,7 @@ public class VideoService {
     private final List<VideoPlatform> platforms;
     private final VideoRepository videoRepository;
 
-    public Video processVideo(String url) {
+    public ProcessVideoResponseDTO processVideo(String url) {
         VideoPlatform strategy = platforms.stream()
                 .filter(p -> p.supports(url))
                 .findFirst()
@@ -35,7 +38,21 @@ public class VideoService {
         // checking for duplicates
         if (videoRepository.existsByOriginalId(videoId)) {
             log.warn("Video {} already exist. Returning the DB.", videoId);
-            return videoRepository.findByOriginalId(videoId).orElseThrow();
+
+            ProcessVideoResponseDTO alreadyProcess = new ProcessVideoResponseDTO();
+
+            Video processVideo = videoRepository.findByOriginalId(videoId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+            alreadyProcess.setId(processVideo.getId());
+            alreadyProcess.setTitle(processVideo.getTitle());
+            alreadyProcess.setDescription(processVideo.getDescription());
+            alreadyProcess.setIsDownloaded(processVideo.getIsDownloaded());
+            alreadyProcess.setTargetPlatforms(processVideo.getTargetPlatforms());
+            alreadyProcess.setUploadStatus(processVideo.getUploadStatus());
+            alreadyProcess.setCreatedAt(processVideo.getCreatedAt());
+
+            return alreadyProcess;
         }
 
         // saving on DB
@@ -49,11 +66,24 @@ public class VideoService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return videoRepository.save(video);
+        videoRepository.save(video);
+
+        ProcessVideoResponseDTO  responseDTO = new  ProcessVideoResponseDTO();
+        responseDTO.setId(video.getId());
+        responseDTO.setTitle(video.getTitle());
+        responseDTO.setDescription(video.getDescription());
+        responseDTO.setIsDownloaded(video.getIsDownloaded());
+        responseDTO.setTargetPlatforms(video.getTargetPlatforms());
+        responseDTO.setUploadStatus(video.getUploadStatus());
+        responseDTO.setCreatedAt(video.getCreatedAt());
+        return responseDTO;
+
     }
 
     public List<Video> getAllVideos() {
         log.info("Getting all videos from database...");
-        return videoRepository.findAll();
+
+        List<Video> videos = videoRepository.findAll();
+        return videos;
     }
 }

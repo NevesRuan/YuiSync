@@ -1,4 +1,4 @@
-package com.yuisync.model;
+package com.yuisync.model.DTOs;
 
 import lombok.Data;
 
