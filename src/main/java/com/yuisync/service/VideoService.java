@@ -1,6 +1,7 @@
 package com.yuisync.service;
 
 import com.yuisync.model.DTOs.ProcessVideoResponseDTO;
+import com.yuisync.model.DTOs.YoutubeVideoMetadataDTO;
 import com.yuisync.model.Video;
 import com.yuisync.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -25,15 +27,18 @@ public class VideoService {
     private final List<VideoPlatform> platforms;
     private final VideoRepository videoRepository;
 
-    public ProcessVideoResponseDTO processVideo(String url) {
+    public ProcessVideoResponseDTO processVideo(String url) throws IOException {
         VideoPlatform strategy = platforms.stream()
                 .filter(p -> p.supports(url))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Platform not supported: " + url));
 
-        File downloadedFile = strategy.download(url);
+        YoutubeVideoMetadataDTO metadataDTO = strategy.metadata(url);
 
-        String videoId = downloadedFile.getName().replace(".mp4", "");
+        String videoId = metadataDTO.getVideoId();
+        String videoTitle = metadataDTO.getVideoTitle();
+        //Description with more than 255 char, will only work on MySQL. H2 database only accept VARCHAR(255)
+        String videoDescription = metadataDTO.getVideoDescription();
 
         // checking for duplicates
         if (videoRepository.existsByOriginalId(videoId)) {
@@ -55,11 +60,14 @@ public class VideoService {
             return alreadyProcess;
         }
 
+        File downloadedFile = strategy.download(url);
+
         // saving on DB
         Video video = Video.builder()
                 .id(UUID.randomUUID().toString())
                 .originalId(videoId)
-                .title("Download by YuiSync - " + videoId) // try to pull the video name from the source
+                .title("Download by YuiSync - " + videoTitle) // try to pull the video name from the source
+                .description("Download by YuiSync - " + videoDescription)
                 .localFilePath(downloadedFile.getAbsolutePath())
                 .isDownloaded(true)
                 .targetPlatforms(new HashSet<>())

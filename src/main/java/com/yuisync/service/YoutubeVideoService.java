@@ -1,8 +1,10 @@
 package com.yuisync.service;
 
+import com.yuisync.model.DTOs.YoutubeVideoMetadataDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -67,6 +69,52 @@ public class YoutubeVideoService implements VideoPlatform {
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Error executing yt-dlp", e);
+        }
+    }
+
+    @Override
+    public YoutubeVideoMetadataDTO metadata(String url) throws IOException {
+        YoutubeVideoMetadataDTO youtubeVideoMetadataDTO = extractMetadata(url);
+        return youtubeVideoMetadataDTO;
+    }
+
+    private YoutubeVideoMetadataDTO extractMetadata(String url) {
+        log.info("Getting Meta Datas on YoutubeVideoService: {}", url);
+
+        ProcessBuilder dataProcessBuilder = new ProcessBuilder(
+                "yt-dlp",
+                "-j",
+                "--no-warnings",
+                url
+        );
+
+        try {
+            Process process = dataProcessBuilder.start();
+
+            //reading JSON output file
+            StringBuilder jsonOutput = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonOutput.append(line);
+                }
+            }
+
+            //waiting exit
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                String errorMsg = new String(process.getErrorStream().readAllBytes());
+                throw new RuntimeException("Error on metadata extraction. Exit code: " + exitCode + ". Erro: " + errorMsg);
+            }
+
+            //  JSON -> Java Object (Jackson)
+            ObjectMapper mapper = new ObjectMapper();
+
+            return mapper.readValue(jsonOutput.toString(), YoutubeVideoMetadataDTO.class);
+
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Fail on yt-dlp execution fot metadata", e);
         }
     }
 

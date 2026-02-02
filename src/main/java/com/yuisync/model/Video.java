@@ -42,7 +42,7 @@ public class Video {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "video_upload_status", joinColumns = @JoinColumn(name = "video_id"))
     @MapKeyEnumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", length = 5000)
     private Map<SocialPlatform, String> uploadStatus;
 
     private LocalDateTime createdAt;
