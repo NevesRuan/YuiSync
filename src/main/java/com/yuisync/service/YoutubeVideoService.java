@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -20,6 +21,28 @@ public class YoutubeVideoService implements VideoPlatform {
 
     @Value("${yuisync.download.path}")
     private String downloadPath;
+
+    public Boolean checkPath() {
+    String pathValue = System.getenv("PATH");
+
+    Optional<String> optionalPath = Optional.ofNullable(pathValue);
+
+    if (optionalPath.isPresent() && !optionalPath.get().isEmpty()) {
+        if (optionalPath.get()
+            .lines()
+        .noneMatch(entry -> entry.contains("yt-dlp") || entry.contains("yt-dl"))) {
+            System.out.println("yt-dlp or yt-dl not found in PATH environment variable.");
+            return false;
+        } else{
+            System.out.println("yt-dlp or yt-dl found in PATH environment variable.");
+            return true;
+        }
+    } else {
+            log.warn("The PATH environment variable is NOT set or is empty.");
+            return false;
+        }
+    }
+
 
     @Override
     public boolean supports(String url) {
@@ -79,43 +102,53 @@ public class YoutubeVideoService implements VideoPlatform {
     }
 
     private YoutubeVideoMetadataDTO extractMetadata(String url) {
-        log.info("Getting Meta Datas on YoutubeVideoService: {}", url);
+        log.info("Checking environment variables for yt-dlp on PATH:");
+        if (checkPath().booleanValue()) {
+            log.info("yt-dlp is available in PATH. Proceeding with the Meta Datas.");
 
-        ProcessBuilder dataProcessBuilder = new ProcessBuilder(
-                "yt-dlp",
-                "-j",
-                "--no-warnings",
-                url
-        );
+            log.info("Getting Meta Datas on YoutubeVideoService: {}", url);
 
-        try {
-            Process process = dataProcessBuilder.start();
+            ProcessBuilder dataProcessBuilder = new ProcessBuilder(
+                    "yt-dlp",
+                    "-j",
+                    "--no-warnings",
+                    url
+            );
 
-            //reading JSON output file
-            StringBuilder jsonOutput = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    jsonOutput.append(line);
+            try {
+                Process process = dataProcessBuilder.start();
+
+                //reading JSON output file
+                StringBuilder jsonOutput = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        jsonOutput.append(line);
+                    }
                 }
-            }
 
-            //waiting exit
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                String errorMsg = new String(process.getErrorStream().readAllBytes());
-                throw new RuntimeException("Error on metadata extraction. Exit code: " + exitCode + ". Erro: " + errorMsg);
-            }
+                //waiting exit
+                int exitCode = process.waitFor();
+                if (exitCode != 0) {
+                    String errorMsg = new String(process.getErrorStream().readAllBytes());
+                    throw new RuntimeException("Error on metadata extraction. Exit code: " + exitCode + ". Erro: " + errorMsg);
+                }
 
-            //  JSON -> Java Object (Jackson)
-            ObjectMapper mapper = new ObjectMapper();
+                //  JSON -> Java Object (Jackson)
+                ObjectMapper mapper = new ObjectMapper();
 
-            return mapper.readValue(jsonOutput.toString(), YoutubeVideoMetadataDTO.class);
+                return mapper.readValue(jsonOutput.toString(), YoutubeVideoMetadataDTO.class);
 
-        } catch (IOException | InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Fail on yt-dlp execution fot metadata", e);
+            } catch (IOException | InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Fail on yt-dlp execution fot metadata", e);
+            }   
+        } else {
+            log.error("yt-dlp is not available in PATH. Please install yt-dlp and ensure it's added to your system's PATH.");
+            throw new RuntimeException("yt-dlp is not available in PATH. Please install yt-dlp and ensure it's added to your system's PATH.");
         }
+        
+       
     }
 
     private void prepareDownloadDirectory() {

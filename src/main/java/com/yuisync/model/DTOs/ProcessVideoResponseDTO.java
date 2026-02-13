@@ -1,6 +1,5 @@
 package com.yuisync.model.DTOs;
 
-import com.yuisync.model.Video;
 import com.yuisync.model.enums.SocialPlatform;
 import lombok.Data;
 
