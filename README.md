@@ -9,9 +9,3 @@ Automated short-form video syndication system built with Spring Boot. It acts as
 Otherwise you will get this error :
 
 yt-dlp is not available in PATH. Please install yt-dlp and ensure it's added to your system's PATH.
-
-### Example for .env
-``` 
-DB_USERNAME=your_user_here
-DB_PASSWORD=your_password_here
-```

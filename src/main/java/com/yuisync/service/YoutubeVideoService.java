@@ -22,11 +22,13 @@ public class YoutubeVideoService implements VideoPlatform {
     @Value("${yuisync.download.path}")
     private String downloadPath;
 
+    // Check if yt-dlp is available in PATH
     public Boolean checkPath() {
     String pathValue = System.getenv("PATH");
 
     Optional<String> optionalPath = Optional.ofNullable(pathValue);
 
+    // Check if PATH is present and not empty, then check for yt-dlp or yt-dl
     if (optionalPath.isPresent() && !optionalPath.get().isEmpty()) {
         if (optionalPath.get()
             .lines()
@@ -103,9 +105,11 @@ public class YoutubeVideoService implements VideoPlatform {
 
     private YoutubeVideoMetadataDTO extractMetadata(String url) {
         log.info("Checking environment variables for yt-dlp on PATH:");
+        // Check if yt-dlp is available in PATH
         if (checkPath().booleanValue()) {
             log.info("yt-dlp is available in PATH. Proceeding with the Meta Datas.");
 
+            // If yt-dlp is available, start extracting metadata using yt-dlp
             log.info("Getting Meta Datas on YoutubeVideoService: {}", url);
 
             ProcessBuilder dataProcessBuilder = new ProcessBuilder(
@@ -144,6 +148,7 @@ public class YoutubeVideoService implements VideoPlatform {
                 throw new RuntimeException("Fail on yt-dlp execution fot metadata", e);
             }   
         } else {
+            // If yt-dlp is not available, log an error and throw an exception
             log.error("yt-dlp is not available in PATH. Please install yt-dlp and ensure it's added to your system's PATH.");
             throw new RuntimeException("yt-dlp is not available in PATH. Please install yt-dlp and ensure it's added to your system's PATH.");
         }
