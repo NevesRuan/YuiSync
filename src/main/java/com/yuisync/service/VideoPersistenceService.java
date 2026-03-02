@@ -2,6 +2,7 @@ package com.yuisync.service;
 
 import com.yuisync.model.DTOs.ProcessVideoResponseDTO;
 import com.yuisync.model.Video;
+import com.yuisync.model.enums.SocialPlatform;
 import com.yuisync.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -66,5 +69,22 @@ public class VideoPersistenceService {
 
         List<Video> videos = videoRepository.findAll();
         return videos;
+    }
+
+    public Optional<Video> findById(String id) {
+        return videoRepository.findById(id);
+    }
+
+    public void updateUploadStatus(String id, SocialPlatform platform, String status) {
+        Video video = videoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video not found: " + id));
+
+        // uploadStatus may be null for videos saved before upload was introduced
+        if (video.getUploadStatus() == null) {
+            video.setUploadStatus(new HashMap<>());
+        }
+
+        video.getUploadStatus().put(platform, status);
+        videoRepository.save(video);
     }
 }

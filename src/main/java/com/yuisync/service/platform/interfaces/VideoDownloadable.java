@@ -1,7 +1,5 @@
 package com.yuisync.service.platform.interfaces;
 
-import com.yuisync.model.DTOs.YoutubeVideoMetadataDTO;
-
 import java.io.File;
 import java.io.IOException;
 

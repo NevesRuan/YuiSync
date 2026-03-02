@@ -35,3 +35,4 @@ build/
 ### CODE ###
 .env
 downloads/
+tokens/
